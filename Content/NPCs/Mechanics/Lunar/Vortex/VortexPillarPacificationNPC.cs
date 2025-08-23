@@ -4,7 +4,9 @@ using ReLogic.Content;
 using System;
 using System.Collections.Generic;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 
 namespace BossForgiveness.Content.NPCs.Mechanics.Lunar.Vortex;
@@ -28,6 +30,8 @@ internal class VortexPillarPacificationNPC : GlobalNPC
     private readonly Dictionary<int, List<VortexPlayer>> clones = [];
     private readonly Dictionary<int, int> playerTimers = [];
 
+    private int _vortoid = -1;
+
     public override void Load() => Aura = ModContent.Request<Texture2D>("BossForgiveness/Content/NPCs/Mechanics/Lunar/Vortex/Aura");
 
     public override void SetStaticDefaults() => NPCID.Sets.MustAlwaysDraw[NPCID.LunarTowerVortex] = true;
@@ -36,39 +40,61 @@ internal class VortexPillarPacificationNPC : GlobalNPC
 
     public override bool PreAI(NPC npc)
     {
+        if (_vortoid == -1 || !Main.npc[_vortoid].active || Main.npc[_vortoid].type != ModContent.NPCType<Vortoid>())
+            _vortoid = NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, ModContent.NPCType<Vortoid>(), 0, npc.whoAmI);
+
+        List<Vector2> clonePositions = [];
+
         foreach (Player player in Main.ActivePlayers)
         {
             playerTimers.TryAdd(player.whoAmI, 0);
 
             if (player.DistanceSQ(npc.Center) < 1200 * 1200)
-                playerTimers[player.whoAmI]++;
+                playerTimers[player.whoAmI] = Math.Min(playerTimers[player.whoAmI] + 1, 600);
             else
                 playerTimers[player.whoAmI] = Math.Max(playerTimers[player.whoAmI] - 1, 0);
 
-            if (playerTimers[player.whoAmI] > 600 && !clones.ContainsKey(player.whoAmI))
+            if (playerTimers[player.whoAmI] >= 600 && !clones.ContainsKey(player.whoAmI))
             {
                 var clone = AddVortexPlayerToPlayer(npc, player, 20);
 
-                if (!clones.ContainsKey(player.whoAmI))
+                if (!clones.TryGetValue(player.whoAmI, out List<VortexPlayer> value))
                     clones.Add(player.whoAmI, [clone]);
                 else
-                    clones[player.whoAmI].Add(clone);
+                    value.Add(clone);
             }
+
+            if (player.dead || playerTimers[player.whoAmI] <= 0)
+                clones.Remove(player.whoAmI);
 
             foreach (List<VortexPlayer> listClones in clones.Values)
             {
                 foreach (VortexPlayer clone in listClones)
                 {
+                    clonePositions.Add(clone.Dummy.Center);
+
                     if (clone.Dummy.Center.DistanceSQ(player.Center) < 120 * 120)
                     {
-                        player.statLife--;
+                        var reason = NetworkText.FromKey("Mods.BossForgiveness.VortexDeath." + Main.rand.Next(3), player.name);
+                        player.Hurt(PlayerDeathReason.ByCustomReason(reason), 1, 0, dodgeable: false);
                         CombatText.NewText(player.Hitbox, CombatText.DamagedFriendly, 1);
                     }
                 }
             }
         }
 
-        List<(int, VortexPlayer) > playersToAdd = [];
+        foreach (Vector2 pos in clonePositions)
+        {
+            NPC vortoid = Main.npc[_vortoid];
+
+            if (vortoid.DistanceSQ(pos) < 120 * 120 && vortoid.life > 1)
+            {
+                vortoid.SimpleStrikeNPC(1, 0, false, 0, null, false, 0, true);
+                break;
+            }
+        }
+
+        List<(int, VortexPlayer)> playersToAdd = [];
 
         foreach (var pair in clones)
         {
@@ -113,19 +139,14 @@ internal class VortexPillarPacificationNPC : GlobalNPC
 
         if (!player.Free)
         {
-            if (player.Timer > 600)
+            if (player.Timer > 200)
             {
                 player.Timer = 0;
                 player.Free = true;
             }
-            else if (player.Timer > 400)
+            else
             {
-                player.Dummy.direction = data.Direction;
-                player.Dummy.velocity = data.Velocity;
-                player.Dummy.Center = data.Center;
-                player.Dummy.velocity.Y += 2.5f;
-
-                if (player.Timer is 405)
+                if (player.Timer is 55)
                 {
                     for (int i = 0; i < 5; ++i)
                     {
@@ -133,9 +154,7 @@ internal class VortexPillarPacificationNPC : GlobalNPC
                         toAdd.Add((original.whoAmI, plr));
                     }
                 }
-            }
-            else
-            {
+
                 player.Dummy.Center = npc.Center + (npc.Center - Main.player[who].Center);
                 player.Dummy.direction = Math.Sign(player.Dummy.Center.X - npc.Center.X);
                 player.Dummy.velocity = original.velocity;

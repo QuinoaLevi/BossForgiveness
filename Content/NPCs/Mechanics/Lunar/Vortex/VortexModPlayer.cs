@@ -26,7 +26,7 @@ internal class VortexModPlayer : ModPlayer
     {
         if (Dummy)
         {
-            const float Transparency = 0.1f;
+            const float Transparency = 0.3f;
 
             r *= Transparency;
             g *= Transparency;

@@ -47,3 +47,9 @@ Tiles: {
 	RottenGrowth.MapEntry: Rotten Growth
 	StardustPieces.MapEntry: Stardust Pieces
 }
+
+VortexDeaths: {
+	0: "{0} experienced nothingness."
+	1: "{0} couldn't handle the warping."
+	2: "{0}, {0}, and {0} lost themselves."
+}
