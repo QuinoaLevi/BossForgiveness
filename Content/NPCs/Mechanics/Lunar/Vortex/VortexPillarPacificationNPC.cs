@@ -3,11 +3,13 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
 
 namespace BossForgiveness.Content.NPCs.Mechanics.Lunar.Vortex;
 
@@ -40,8 +42,17 @@ internal class VortexPillarPacificationNPC : GlobalNPC
 
     public override bool PreAI(NPC npc)
     {
-        if (_vortoid == -1 || !Main.npc[_vortoid].active || Main.npc[_vortoid].type != ModContent.NPCType<Vortoid>())
-            _vortoid = NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, ModContent.NPCType<Vortoid>(), 0, npc.whoAmI);
+        if (Main.netMode != NetmodeID.MultiplayerClient)
+        {
+            if (_vortoid == -1)
+                SetVortoid(npc);
+
+            NPC vort = Main.npc[_vortoid];
+            bool validVortoid = !vort.active || vort.type != ModContent.NPCType<Vortoid>();
+
+            if (validVortoid)
+                SetVortoid(npc);
+        }
 
         List<Vector2> clonePositions = [];
 
@@ -114,6 +125,11 @@ internal class VortexPillarPacificationNPC : GlobalNPC
 
         return true;
     }
+
+    private void SetVortoid(NPC npc) => _vortoid = NPC.NewNPC(npc.GetSource_FromAI(), (int)npc.Center.X, (int)npc.Center.Y, ModContent.NPCType<Vortoid>(), 0, npc.whoAmI);
+
+    public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter) => binaryWriter.Write((short)_vortoid);
+    public override void ReceiveExtraAI(NPC npc, BitReader bitReader, BinaryReader binaryReader) => _vortoid = binaryReader.ReadInt16();
 
     private static VortexPlayer AddVortexPlayerToPlayer(NPC npc, Player player, int slot, Action<VortexPlayer> hook = null)
     {

@@ -1,5 +1,6 @@
 ﻿using BossForgiveness.Common;
 using Microsoft.Xna.Framework;
+using System;
 using System.IO;
 using Terraria;
 using Terraria.ID;
@@ -89,7 +90,7 @@ internal class Vortoid : ModNPC
             }
         }
 
-        if (Target == Vector2.Zero || TargetFactor >= 1)
+        if ((Target == Vector2.Zero || TargetFactor >= 1) && Main.netMode != NetmodeID.MultiplayerClient)
         {
             lastTarget = Target == Vector2.Zero ? NPC.Center : Target;
 
@@ -99,6 +100,7 @@ internal class Vortoid : ModNPC
             } while (Collision.SolidCollision(Target, 32, 48));
 
             TargetFactor = 0;
+            NPC.netUpdate = true;
         }
 
         TargetFactor += 0.006f;
@@ -124,6 +126,7 @@ internal class Vortoid : ModNPC
     public override void SendExtraAI(BinaryWriter writer)
     {
         writer.Write(Exploding);
+        writer.Write((Half)TargetFactor);
         writer.Write(Target.X);
         writer.Write(Target.Y);
         writer.Write(lastTarget.X);
@@ -133,6 +136,7 @@ internal class Vortoid : ModNPC
     public override void ReceiveExtraAI(BinaryReader reader)
     {
         Exploding = reader.ReadBoolean();
+        TargetFactor = (float)reader.ReadHalf();
         Target = new(reader.ReadSingle(), reader.ReadSingle());
         lastTarget = new(reader.ReadSingle(), reader.ReadSingle());
     }

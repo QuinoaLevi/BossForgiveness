@@ -1,5 +1,7 @@
+global using Terraria.ModLoader;
+global using Terraria;
+
 using System.IO;
-using Terraria.ModLoader;
 
 namespace BossForgiveness;
 
