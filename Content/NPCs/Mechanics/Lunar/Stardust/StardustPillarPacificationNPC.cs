@@ -137,7 +137,7 @@ internal class StardustPillarPacificationNPC : GlobalNPC
 
         timer++;
         
-        if (timer % 480 == 0 && Main.netMode != NetmodeID.MultiplayerClient && !won)
+        if (timer % 480 == 0 && Main.netMode != NetmodeID.MultiplayerClient && !won && !components.Any(x => x.Value.Placed))
         {
             Vector2 position = npc.Center + new Vector2(0, Main.rand.NextFloat(-600, -250)).RotatedByRandom(MathHelper.PiOver2);
             int id;

@@ -3,10 +3,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
-using Terraria;
 using Terraria.GameContent;
 using Terraria.ID;
-using Terraria.ModLoader;
 
 namespace BossForgiveness.Content.NPCs.Mechanics.Enemies;
 
@@ -16,20 +14,24 @@ internal class RainbowSlimePacificationNPC : GlobalNPC
     public const int MaxDismay = 60 * 2;
 
     private static Asset<Texture2D> Face = null;
+    private static Asset<Texture2D> AoE = null;
 
     public override bool InstancePerEntity => true;
 
     public bool canPacify = true;
     public bool pacifying = false;
 
-    private float _relativeDistance = 0;
     private int _partner = -1;
     private int _countTime = 0;
     private Vector2 _visualScale = Vector2.One;
 
     public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => entity.type == NPCID.RainbowSlime;
 
-    public override void SetStaticDefaults() => Face = ModContent.Request<Texture2D>("BossForgiveness/Content/NPCs/Vanilla/Enemies/RainbowSlimePacified_Face");
+    public override void SetStaticDefaults()
+    {
+        Face = ModContent.Request<Texture2D>("BossForgiveness/Content/NPCs/Vanilla/Enemies/RainbowSlimePacified_Face");
+        AoE = ModContent.Request<Texture2D>("BossForgiveness/Content/NPCs/Vanilla/Enemies/RainbowSlimeAoE");
+    }
 
     public override bool PreAI(NPC npc)
     {
@@ -68,13 +70,12 @@ internal class RainbowSlimePacificationNPC : GlobalNPC
                 {
                     pacifying = true;
                     _partner = player.whoAmI;
-                    _relativeDistance = npc.Distance(player.Center);
                     _countTime = 0;
 
                     npc.ai[0] = 0;
                     npc.ai[1] = 0;
 
-                    for (int i = 0; i < 20; ++i)
+                    for (int i = 0; i < 18; ++i)
                     {
                         int num9 = Dust.NewDust(npc.position, npc.width, npc.height, DustID.RainbowTorch, 0f, 0f, 100, Main.DiscoColor, 2.5f);
                         Main.dust[num9].noGravity = true;
@@ -96,9 +97,8 @@ internal class RainbowSlimePacificationNPC : GlobalNPC
     private void Dance(NPC npc, ref float dismayTimer, ref float state)
     {
         Player partner = Main.player[_partner];
-        float delta = Math.Abs(partner.Distance(npc.Center) - _relativeDistance);
 
-        if (delta > 100)
+        if (partner.Distance(npc.Center) > 100)
         {
             dismayTimer++;
 
@@ -148,6 +148,7 @@ internal class RainbowSlimePacificationNPC : GlobalNPC
             Color faceColor = color with { A = 220 } * (npc.ai[0] / MaxDismay);
             SpriteEffects effect = npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
 
+            Main.EntitySpriteDraw(AoE.Value, position - new Vector2(0, 26), null, color * 0.2f, 0f, AoE.Size() / 2f, Vector2.One, SpriteEffects.None);
             Main.EntitySpriteDraw(tex, position, npc.frame, color, 0f, npc.frame.Size() / new Vector2(2, 1), _visualScale, SpriteEffects.None);
             Main.EntitySpriteDraw(Face.Value, position, npc.frame, faceColor, 0f, npc.frame.Size() / new Vector2(2, 1), _visualScale, effect);
             return false;

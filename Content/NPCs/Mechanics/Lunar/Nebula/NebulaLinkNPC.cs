@@ -176,6 +176,7 @@ internal class NebulaLinkNPC : GlobalNPC
                 {
                     item.velocity = Vector2.Zero;
                     item.position.Y = npc.Center.Y - 500 + MathF.Sin(_timer * 0.05f) * 20;
+                    item.position.X = npc.Center.X;
                 }
             }
         }

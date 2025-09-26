@@ -24,7 +24,7 @@ internal class SolarPillarPacificationNPC : GlobalNPC
     public override void LoadData(NPC npc, TagCompound tag)
     {
         Invalid = tag.GetBool("invalid");
-        Count = tag.GetByte("count");
+        Count = tag.GetInt("count");
     }
 
     public override void SendExtraAI(NPC npc, BitWriter bitWriter, BinaryWriter binaryWriter)
